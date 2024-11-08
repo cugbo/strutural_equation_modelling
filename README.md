@@ -1,5 +1,4 @@
 ---
-
 # Motivation Analysis with PIRLS Data
 
 This repository contains code to analyze and validate constructs related to "motivation" using data from the PIRLS seminar (`pirls_lesson.xlsx`). Specifically, it checks for a common motivation construct by examining two scales: **Internal Motivation** and **Instrumental Motivation**.
@@ -13,7 +12,6 @@ The goal of this project is to determine if there is a common underlying constru
 Using these scales, we aim to identify if there is a single, unified construct of "motivation" or if these constructs should be treated independently.
 
 ## Dataset
-
 - **File**: `pirls_lesson.xlsx`
 - **Description**: Contains responses from a PIRLS seminar, with fields for various motivation-related questions.
 - **Variables of Interest**:
