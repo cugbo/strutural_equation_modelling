@@ -37,14 +37,14 @@ This project uses Python with the following packages:
 
 Install all dependencies with:
 
-```bash
+```
 pip install pandas numpy scipy statsmodels
 ```
 
 ## Usage
 
 1. Clone this repository:
-   ```bash
+   ```
    git clone https://github.com/yourusername/motivation-analysis-pirls.git
    cd motivation-analysis-pirls
    ```
@@ -52,7 +52,7 @@ pip install pandas numpy scipy statsmodels
 2. Place the pirls_lesson.xlsx file in the project directory.
 
 3. Run the analysis script:
-   ```bash
+   ```
    python analyze_motivation.py
    ```
 
