@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# import relevant libraries
+library(readxl)
+library(psych)
+library(lavaan)
+library(semPlot)
+library(knitr)
+```
+```{r}
+# Load the data
+data <- read_excel("pirls_lesson.xlsx")
+
+head(data, 10)
+```
+
+
+```{r}
+# Select the relevant columns for internal and instrumental motivation
+internal_motivation <- data[, grep("^enjoy_r[1-6]$", names(data))]
+instrumental_motivation <- data[, grep("^reason[1-6]$", names(data))]
+
+# Combine both scales into one data frame
+motivation_data <- cbind(internal_motivation, instrumental_motivation)
+
+# Perform factor analysis
+# We assume that the items might load onto a single factor (common construct "motivation")
+fa_result <- fa(motivation_data, nfactors = 1, rotate = "none")
+
+# Print the factor analysis result
+print(fa_result)
+```
+
+```{r}
+# Check if a single factor solution is sufficient or if multiple factors are needed
+fa_parallel <- fa.parallel(motivation_data)
+```
+
+The parallel analysis scree plot compares the eigenvalues of the actual data with those from simulated noise to determine the number of meaningful factors or components to retain. The plot indicates that for principal component analysis (PCA), two components should be retained as their eigenvalues are greater than those of the simulated data, while for factor analysis (FA), only one factor is meaningful, with its eigenvalue exceeding the simulated data. Beyond these points, the eigenvalues of the actual data fall below those of the simulated data, suggesting that additional factors or components represent noise rather than meaningful variance. This suggests that the construct being analyzed, such as motivation, may be best represented by a single factor in factor analysis or two components in PCA for dimensionality reduction.
+
+
+```{r}
+# Reverse-score items if they are on a 1-5 scale
+reverse_columns <- grep("enjoy_r[1-6]", names(data))
+data[, reverse_columns] <- 6 - data[, reverse_columns]
+
+# Check the result
+head(data[, reverse_columns])
+
+```
+
+```{r}
+# Define the model with two factors (internal and instrumental motivation)
+model <- '
+  internal =~ enjoy_r1 + enjoy_r2 + enjoy_r3 + enjoy_r4 + enjoy_r5 + enjoy_r6
+  instrumental =~ reason1 + reason2 + reason3 + reason4 + reason5 + reason6
+'
+
+# Fit the model to the data
+fit <- cfa(model, data = data, std.lv = TRUE)
+
+# Display the standardized results
+summary(fit, standardized = TRUE, fit.measures = TRUE)
+
+# Extract the standardized correlation between the two factors
+correlation <- inspect(fit, "std")$psi[1, 2]
+correlation
+```
+
+```{r}
+# Fit the CFA model to the data
+fit <- cfa(model, data = data, std.lv = TRUE)
+
+# Display the fit summary, including standardized estimates and fit measures
+summary(fit, standardized = TRUE, fit.measures = TRUE)
+
+# Extract RMSEA and its 90% confidence interval
+rmsea <- fitmeasures(fit, c("rmsea", "rmsea.ci.lower", "rmsea.ci.upper"))
+rmsea
+```
+
+```{r}
+# Calculate modification indices
+mod_indices <- modindices(fit)
+
+# Filter for potential cross-loadings
+cross_loadings <- subset(mod_indices, op == "=~" & !grepl(lhs, rhs))
+
+# Sort by the highest MI
+cross_loadings <- cross_loadings[order(-cross_loadings$mi), ]
+
+# Extract the cross-loading with the highest MI
+top_cross_loading <- cross_loadings[1, ]
+
+# Display the result
+print(top_cross_loading)
+
+```
+
+```{r}
+# Get all modification indices
+all_mod_indices <- modindices(fit)
+
+# Sort by MI in descending order
+sorted_mod_indices <- all_mod_indices[order(-all_mod_indices$mi), ]
+
+# Extract the top two modification indices
+top_two_mods <- sorted_mod_indices[1:2, ]
+
+# Display the results
+print(top_two_mods)
+
+```
+
+```{r}
+# Define the revised CFA model with the two highest modification indices applied
+revised_model <- '
+  internal =~ enjoy_r1 + enjoy_r2 + enjoy_r3 + enjoy_r4 + enjoy_r5 + enjoy_r6
+  instrumental =~ reason1 + reason2 + reason3 + reason4 + reason5 + reason6
+  
+  # Add cross-loading based on highest MI (example: enjoy_r4 on instrumental)
+  instrumental =~ enjoy_r4
+  # Add error covariance based on second highest MI (example: enjoy_r2 with enjoy_r3)
+  enjoy_r2 ~~ enjoy_r3
+'
+
+# Fit the revised CFA model to the data
+revised_fit <- cfa(revised_model, data = data, std.lv = TRUE)
+
+# Plot the revised model
+semPaths(revised_fit, "std", layout = "tree", residuals = TRUE, 
+         intercepts = FALSE, edge.label.cex = 0.8, nCharNodes = 6)
+
+# Extract fit summary to review changes in fit statistics
+summary(revised_fit, standardized = TRUE, fit.measures = TRUE)
+```
+
